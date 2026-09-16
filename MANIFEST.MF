@@ -1,0 +1,10 @@
+MIDlet-1: iPod, /icon.png, ipod.IPodMIDlet
+MIDlet-Name: iPod
+MIDlet-Vendor: Homebrew
+MIDlet-Version: 1.0.0
+MIDlet-Description: An iPod-style MP3 player for Series 40
+MIDlet-Icon: /icon.png
+MicroEdition-Configuration: CLDC-1.1
+MicroEdition-Profile: MIDP-2.0
+MIDlet-Permissions: javax.microedition.io.Connector.file.read
+Nokia-MIDlet-Category: Application
