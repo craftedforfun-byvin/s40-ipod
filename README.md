@@ -59,7 +59,7 @@ The interesting part of this project is not the music player. It is that the pla
 
 **The memory limit is not 32 MB.** That is device RAM. A MIDlet on this class of phone gets roughly 2 MB of Java heap. `Image.createImage()` inflates artwork to source resolution, so a single 600 x 600 cover is around 1.4 MB, most of the heap for one album. Artwork is therefore recorded as a byte offset into the music file during the scan and only read at the moment it is drawn.
 
-Full write-up: [link to your blog post]](https://vinayakrao.framer.website/blog/nokia_ipod)
+Full write-up:  [Can your old Nokia phone act as your iPod in 2026?](https://vinayakrao.framer.website/blog/nokia_ipod)
 
 ## Building from source
 
