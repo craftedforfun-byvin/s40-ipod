@@ -243,6 +243,14 @@ public final class Shell extends Canvas implements Runnable {
         route(code, true);
     }
 
+    protected void keyReleased(int code) {
+        if (hold) return;
+        UIScreen s = top();
+        if (s == null) return;
+        s.keyReleased(map(code), code);
+        refresh();
+    }
+
     private void route(int code, boolean repeat) {
         if (hold) {
             if (code == 104 || code == 72) setHold(false);   // h / H

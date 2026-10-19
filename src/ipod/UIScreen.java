@@ -25,6 +25,13 @@ public abstract class UIScreen {
         key(action, code);
     }
 
+    /**
+     * Key let go. Screens that need to tell a tap from a hold act here rather
+     * than on the press, because the press arrives before anyone knows which
+     * it is going to be.
+     */
+    public void keyReleased(int action, int code) {}
+
     /** Return true to ask for another animation frame. */
     public boolean tick() {
         return false;

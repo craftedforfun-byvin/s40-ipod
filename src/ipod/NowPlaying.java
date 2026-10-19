@@ -16,6 +16,8 @@ public final class NowPlaying extends UIScreen {
     private int marquee;
     private int marqueePause = 14;
     private boolean seeking;
+    private int armed;              // a transport key is down, not yet a skip
+    private long armedAt;
     private int titleWidth = 200;   // set by the last paint, used by the marquee
 
     public NowPlaying() {
@@ -234,12 +236,13 @@ public final class NowPlaying extends UIScreen {
                 e.toggle();
                 return;
             case Shell.LEFT:
-                seeking = false;
-                e.prev();
-                return;
             case Shell.RIGHT:
+                // Don't skip yet. The press arrives before we know whether this
+                // is a tap or a hold, and skipping here is what made holding
+                // Right jump to the next song and then scrub *that* one.
+                armed = action;
+                armedAt = System.currentTimeMillis();
                 seeking = false;
-                e.next();
                 return;
             case Shell.UP:
                 e.nudgeVolume(5);
@@ -261,17 +264,27 @@ public final class NowPlaying extends UIScreen {
         }
     }
 
-    /** Holding left or right scrubs rather than skipping. */
+    /** Auto-repeat means the key is being held: scrub the current track. */
     public void keyRepeat(int action, int code) {
-        if (action == Shell.LEFT) {
+        if (action == Shell.LEFT || action == Shell.RIGHT) {
+            armed = 0;                       // a hold, not a tap - no skip
             seeking = true;
-            shell.engine.seekBy(-5);
-        } else if (action == Shell.RIGHT) {
-            seeking = true;
-            shell.engine.seekBy(5);
+            shell.engine.seekBy(action == Shell.LEFT ? -5 : 5);
         } else {
             key(action, code);
         }
+    }
+
+    /** A tap: the skip happens here, once we know it was not a hold. */
+    public void keyReleased(int action, int code) {
+        seeking = false;
+        if (armed == 0 || action != armed) {
+            armed = 0;
+            return;
+        }
+        armed = 0;
+        if (action == Shell.LEFT) shell.engine.prev();
+        else if (action == Shell.RIGHT) shell.engine.next();
     }
 
     private void showHud(int kind, String message) {
@@ -283,6 +296,15 @@ public final class NowPlaying extends UIScreen {
 
     public boolean tick() {
         boolean more = false;
+        // Belt and braces: MIDP guarantees keyReleased, but if a device were to
+        // drop it the transport key would be dead. Auto-repeat always arrives
+        // long before this, so a held key is scrubbing by now, not armed.
+        if (armed != 0 && System.currentTimeMillis() - armedAt > 1500L) {
+            int a = armed;
+            armed = 0;
+            if (a == Shell.LEFT) shell.engine.prev();
+            else if (a == Shell.RIGHT) shell.engine.next();
+        }
         if (hud != HUD_NONE) {
             if (System.currentTimeMillis() > hudUntil) hud = HUD_NONE;
             more = true;

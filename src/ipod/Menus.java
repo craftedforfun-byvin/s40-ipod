@@ -8,7 +8,8 @@ public final class Menus {
     /* menus */
     public static final int M_ROOT = 0, M_MUSIC = 1, M_PLAYLISTS = 2, M_ARTISTS = 3,
             M_ALBUMS = 4, M_SONGS = 5, M_SETTINGS = 6, M_ARTIST = 7, M_ALBUM = 8,
-            M_OTG = 9, M_ARTIST_SONGS = 10, M_BROWSE_ROOTS = 11;
+            M_OTG = 9, M_ARTIST_SONGS = 10, M_BROWSE_ROOTS = 11,
+            M_FOLDERS = 12, M_FOLDER = 13;
 
     /* actions */
     public static final int A_MENU = 1, A_PLAY_TRACK = 2, A_SHUFFLE_ALL = 3,
@@ -56,6 +57,8 @@ public final class Menus {
                 MenuScreen m = new MenuScreen("Playlists");
                 m.add(MenuItem.sub("On-The-Go", A_MENU, M_OTG)
                         .value(String.valueOf(sh.engine.onTheGo.size())));
+                m.add(MenuItem.sub("Folders", A_MENU, M_FOLDERS)
+                        .value(String.valueOf(lib.folders.size())));
                 return m;
             }
 
@@ -143,6 +146,35 @@ public final class Menus {
                 m.add(MenuItem.act("Clear On-The-Go", A_CLEAR_OTG, 0));
                 m.add(MenuItem.act("About", A_ABOUT, 0));
                 m.add(MenuItem.act("Quit iPod", A_EXIT, 0));
+                return m;
+            }
+
+            case M_FOLDERS: {
+                MenuScreen m = new MenuScreen("Folders");
+                if (lib.folders.size() == 0) {
+                    m.add(MenuItem.act("No folders", A_NOTHING, 0));
+                    return m;
+                }
+                for (int i = 0; i < lib.folders.size(); i++) {
+                    Library.Folder f = lib.folder(i);
+                    MenuItem it = MenuItem.sub(f.name, A_MENU, M_FOLDER).arg2(i)
+                            .value(String.valueOf(f.trackIdx.size()));
+                    // let the preview pane show something from the folder
+                    if (f.trackIdx.size() > 0) {
+                        Track first = lib.track(Library.index(f.trackIdx, 0));
+                        if (first != null) it.albumIdx = first.albumIdx;
+                    }
+                    m.add(it);
+                }
+                return m;
+            }
+
+            case M_FOLDER: {
+                Library.Folder f = lib.folder(arg);
+                MenuScreen m = new MenuScreen(f == null ? "Folder" : f.name);
+                if (f == null) return m;
+                m.queue = f.trackIdx;
+                fillTracks(sh, m, f.trackIdx);
                 return m;
             }
 

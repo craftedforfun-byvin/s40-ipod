@@ -16,6 +16,7 @@ public final class Library {
     public Vector tracks  = new Vector();   // Track
     public Vector albums  = new Vector();   // Album
     public Vector artists = new Vector();   // Artist
+    public Vector folders = new Vector();   // Folder
 
     public boolean ready;
     public volatile boolean scanning;
@@ -33,6 +34,13 @@ public final class Library {
         public String artist;
         public Vector trackIdx = new Vector();
         public int artTrack = -1;           // index of a track that carries the cover
+    }
+
+    /** A folder that directly contains music - used as a ready-made playlist. */
+    public static final class Folder {
+        public String path;                 // file:///E:/Music/Album/
+        public String name;                 // what the menu shows
+        public Vector trackIdx = new Vector();
     }
 
     public static final class Artist {
@@ -247,6 +255,8 @@ public final class Library {
                 track(index(al.trackIdx, j)).albumIdx = i;
             }
         }
+        groupFolders();
+
         for (int i = 0; i < artists.size(); i++) {
             Artist ar = (Artist) artists.elementAt(i);
             ar.albumIdx = new Vector();
@@ -257,6 +267,91 @@ public final class Library {
                 }
             }
         }
+    }
+
+    /**
+     * Every folder that directly holds music becomes a playlist. This needs no
+     * extra scanning - the paths are already on the tracks - so it costs one
+     * pass over the library and no file access at all.
+     */
+    private void groupFolders() {
+        folders = new Vector();
+        Hashtable byPath = new Hashtable();
+        for (int i = 0; i < tracks.size(); i++) {
+            Track t = track(i);
+            String dir = folderOf(t.url);
+            if (dir == null) continue;
+            Folder f = (Folder) byPath.get(dir);
+            if (f == null) {
+                f = new Folder();
+                f.path = dir;
+                f.name = lastSegment(dir);
+                byPath.put(dir, f);
+                folders.addElement(f);
+            }
+            f.trackIdx.addElement(new Integer(i));
+        }
+
+        // Two folders called "Disc 1" are no use to anyone: where a name repeats,
+        // qualify it with the folder above.
+        for (int i = 0; i < folders.size(); i++) {
+            Folder a = (Folder) folders.elementAt(i);
+            for (int j = i + 1; j < folders.size(); j++) {
+                Folder b = (Folder) folders.elementAt(j);
+                if (a.name.equals(b.name)) {
+                    a.name = qualified(a.path);
+                    b.name = qualified(b.path);
+                }
+            }
+        }
+
+        final Library self = this;
+        Sort.sort(folders, new Sort.Cmp() {
+            public int compare(Object a, Object b) {
+                return Sort.name(((Folder) a).name, ((Folder) b).name);
+            }
+        });
+        // inside a folder, disc order is what the filenames say
+        for (int i = 0; i < folders.size(); i++) {
+            Sort.sort(((Folder) folders.elementAt(i)).trackIdx, new Sort.Cmp() {
+                public int compare(Object a, Object b) {
+                    Track x = self.track(((Integer) a).intValue());
+                    Track y = self.track(((Integer) b).intValue());
+                    return Sort.name(x.fileName(), y.fileName());
+                }
+            });
+        }
+    }
+
+    /** "file:///E:/Music/Album/01.mp3" -> "file:///E:/Music/Album/" */
+    public static String folderOf(String url) {
+        if (url == null) return null;
+        int i = url.lastIndexOf('/');
+        return i < 0 ? null : url.substring(0, i + 1);
+    }
+
+    /** Last path segment of a directory url. */
+    private static String lastSegment(String dir) {
+        String s = dir;
+        if (s.length() > 0 && s.charAt(s.length() - 1) == '/') s = s.substring(0, s.length() - 1);
+        int i = s.lastIndexOf('/');
+        String n = i >= 0 ? s.substring(i + 1) : s;
+        return n.length() == 0 ? "/" : n;
+    }
+
+    /** "Artist/Disc 1" - the folder plus the one above it. */
+    private static String qualified(String dir) {
+        String s = dir;
+        if (s.length() > 0 && s.charAt(s.length() - 1) == '/') s = s.substring(0, s.length() - 1);
+        int i = s.lastIndexOf('/');
+        if (i <= 0) return lastSegment(dir);
+        String parent = lastSegment(s.substring(0, i + 1));
+        return Str.cat(parent, "/", lastSegment(dir));
+    }
+
+    public Folder folder(int i) {
+        if (i < 0 || i >= folders.size()) return null;
+        return (Folder) folders.elementAt(i);
     }
 
     /* ---- accessors ----------------------------------------------------- */

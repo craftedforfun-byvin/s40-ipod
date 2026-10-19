@@ -27,6 +27,7 @@ public final class Harness {
         noTagAtAll(dir);
         scanning(dir);
         grouping();
+        folders();
         sorting();
         strings();
 
@@ -243,6 +244,57 @@ public final class Harness {
         eq("songOrder size", "6", String.valueOf(lib.songOrder().size()));
         eq("unknown artist grouped", "Unknown Artist",
            lib.track(((Integer) lib.songOrder().elementAt(lib.songOrder().size() - 1)).intValue()).displayArtist());
+    }
+
+    /* ---------------- folders as playlists ---------------- */
+
+    static void folders() {
+        Library lib = new Library();
+        lib.tracks = new Vector();
+        lib.tracks.addElement(at("file:///E:/Music/Terminal 3/01 Zebra.mp3", "Zebra"));
+        lib.tracks.addElement(at("file:///E:/Music/Terminal 3/02 Apple.mp3", "Apple"));
+        lib.tracks.addElement(at("file:///E:/Music/Lantern/01 Low Tide.mp3", "Low Tide"));
+        // same folder name under two different parents
+        lib.tracks.addElement(at("file:///E:/Music/Ossa/Disc 1/a.mp3", "A"));
+        lib.tracks.addElement(at("file:///E:/Music/Neon/Disc 1/b.mp3", "B"));
+        lib.group();
+
+        eq("folders found", "4", String.valueOf(lib.folders.size()));
+
+        Library.Folder t3 = folderNamed(lib, "Terminal 3");
+        eq("folder groups its tracks", "2", t3 == null ? "none" : String.valueOf(t3.trackIdx.size()));
+
+        // inside a folder the filenames decide the order, not the tag order
+        StringBuffer order = new StringBuffer();
+        for (int i = 0; i < t3.trackIdx.size(); i++) {
+            if (i > 0) order.append(",");
+            order.append(lib.track(Library.index(t3.trackIdx, i)).displayTitle());
+        }
+        // by title this would be "Apple,Zebra" - the filenames say otherwise
+        eq("folder order follows filenames", "Zebra,Apple", order.toString());
+
+        eq("duplicate names qualified", "true",
+           String.valueOf(folderNamed(lib, "Ossa/Disc 1") != null
+                       && folderNamed(lib, "Neon/Disc 1") != null));
+        eq("unique name left alone", "true", String.valueOf(folderNamed(lib, "Lantern") != null));
+        eq("folderOf strips the file", "file:///E:/Music/Lantern/",
+           Library.folderOf("file:///E:/Music/Lantern/01 Low Tide.mp3"));
+    }
+
+    static Library.Folder folderNamed(Library lib, String name) {
+        for (int i = 0; i < lib.folders.size(); i++) {
+            if (name.equals(lib.folder(i).name)) return lib.folder(i);
+        }
+        return null;
+    }
+
+    /** A track at a given path, tagged so grouping has something to work with. */
+    static Track at(String url, String title) {
+        Track t = new Track(url);
+        t.title = title;
+        t.artist = "Various";
+        t.album = "Various";
+        return t;
     }
 
     static void sorting() {
