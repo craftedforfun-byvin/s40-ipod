@@ -89,7 +89,7 @@ $size = (Get-Item dist\ipod.jar).Length
     "MIDlet-1: iPod, /icon.png, ipod.IPodMIDlet",
     "MIDlet-Name: iPod",
     "MIDlet-Vendor: Homebrew",
-    "MIDlet-Version: 1.0.0",
+    "MIDlet-Version: 1.1.0",
     "MIDlet-Description: An iPod-style MP3 player for Series 40",
     "MIDlet-Icon: /icon.png",
     "MIDlet-Jar-URL: ipod.jar",
